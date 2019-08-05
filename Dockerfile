@@ -1,26 +1,19 @@
-# Base Image
-FROM python:3.6
+# 1. Build Image
+FROM golang:1.8.4-jessie AS builder
 
-# Maintainer
-LABEL maintainer "Shiho ASA"
+# Install dependencies
+WORKDIR /go/src/github.com/asashiho/dockertext-greet
+RUN go get -d -v github.com/urfave/cli
 
-# Upgrade pip
-RUN pip install --upgrade pip
+# Build modules
+COPY main.go .
+RUN GOOS=linux go build -a -o greet .
 
-# Install Path
-ENV APP_PATH /opt/imageview
+# ------------------------------
+# 2. Production Image
+FROM busybox
+WORKDIR /opt/greet/bin
 
-# Install Python modules needed by the Python app
-COPY requirements.txt $APP_PATH/
-RUN pip install --no-cache-dir -r $APP_PATH/requirements.txt
-
-# Copy files required for the app to run
-COPY app.py $APP_PATH/
-COPY templates/ $APP_PATH/templates/
-COPY static/ $APP_PATH/static/
-
-# Port number the container should expose
-EXPOSE 80
-
-# Run the application
-CMD ["python", "/opt/imageview/app.py"]
+# Deploy modules
+COPY --from=builder /go/src/github.com/asashiho/dockertext-greet/ .
+ENTRYPOINT ["./greet"]
