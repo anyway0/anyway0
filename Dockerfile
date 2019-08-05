@@ -1,21 +1,26 @@
 # Base Image
-FROM jupyter/base-notebook
+FROM python:3.6
 
 # Maintainer
 LABEL maintainer "Shiho ASA"
 
-# Configure environment
-ENV CONDA_DIR=/opt/conda \
-    NB_USER=jovyan
-    
-# Install Jupyter Notebook and Hub
-RUN conda install --quiet --yes \
-    'numpy=1.13.*' \
-    'scipy=0.19.*' \
-    'sympy=1.1.*' \
-    'matplotlib=2.1.*' \
-    && conda clean -tipsy && \
-    fix-permissions $CONDA_DIR
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Install Sample Notebook
-COPY sample_notebook/CavityFlow_with_Navier-Stokes.ipynb /home/$NB_USER/
+# Install Path
+ENV APP_PATH /opt/imageview
+
+# Install Python modules needed by the Python app
+COPY requirements.txt $APP_PATH/
+RUN pip install --no-cache-dir -r $APP_PATH/requirements.txt
+
+# Copy files required for the app to run
+COPY app.py $APP_PATH/
+COPY templates/ $APP_PATH/templates/
+COPY static/ $APP_PATH/static/
+
+# Port number the container should expose
+EXPOSE 80
+
+# Run the application
+CMD ["python", "/opt/imageview/app.py"]
